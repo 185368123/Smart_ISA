@@ -168,7 +168,7 @@ android {
     productFlavors {
         autoproduct {
             // 车机公版
-            applicationId "com.petal.leapmotor.map.isa"
+            applicationId "com.smart.car.map.ehp"
             dimension "mode"
             missingDimensionStrategy "mode", "auto"
         }
