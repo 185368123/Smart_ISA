@@ -35,11 +35,6 @@ import com.huawei.maps.auto.sdk.businessbase.offline.bean.OfflineDataInitParam;
 import com.huawei.maps.log.AutoLogConstants;
 import com.huawei.maps.log.AutoLogInitConf;
 import com.huawei.maps.log.AutoLogModuleConfig;
-import com.leapmotor.autosdk.ServiceManager;
-import com.leapmotor.autosdk.module.ServiceCallback;
-import com.leapmotor.autosdk.module.ServiceName;
-import com.leapmotor.autosdk.module.navi.NaviService;
-import com.leapmotor.autosdk.module.vehicle.VehicleService;
 
 import java.io.File;
 import java.io.IOException;
@@ -55,8 +50,6 @@ public class MyApplication extends Application {
     public PetalActivationService mActivationService;
     public static AtomicBoolean isActivationFail = new AtomicBoolean(true);
     private AtomicBoolean isTaskRunning = new AtomicBoolean(false);
-    private NaviService mNaviService = (NaviService) ServiceManager.getInstance().getService(ServiceName.NAVI);
-    private VehicleService mVehicleService = (VehicleService) ServiceManager.getInstance().getService(ServiceName.VEHICLE_CONFIG);
     private String TAG = "KikaISA_MyApplication";
     private String mCountryCode = "CN";
     private PetalEHPListener isaPetalEHPListener;
@@ -69,152 +62,13 @@ public class MyApplication extends Application {
     public void onCreate() {
         super.onCreate();
         try {
-            if (mVehicleService != null){
-                if(!mVehicleService.isIsaSupport()) {
-                    LogUtils.getInstance().i(TAG, "当前车不支持ISA功能, 停止所有ISA相关服务!");
-                    stopService(new Intent(this, HwLocationAndIsaService.class));
-                    return;
-                }
-            }
             LogUtils.getInstance().initWriteLogFile(this);
-            initLeapMotorService();
             mCountryCode = getCountryCode();
             initPetalSDK();
             activateSdk();
             monitorNetwork();
             initMapService();
             OfflineDataUtils.getInstance().startCheckOfflineData();
-            if (mVehicleService != null) {
-                mVehicleService.setOnEventListener(new VehicleService.OnEventListener() {
-                    @Override
-                    public void onDrivingMode(int i) {
-
-                    }
-
-                    @Override
-                    public void onDrivingModeAcceleration(int i) {
-
-                    }
-
-                    @Override
-                    public void onDrivingModeEnergyRecovery(int i) {
-
-                    }
-
-                    @Override
-                    public void onDrivingModeSteering(int i) {
-
-                    }
-
-                    @Override
-                    public void onElectricityMileageDashboard(float v) {
-
-                    }
-
-                    @Override
-                    public void onFuelMileageDashboard(float v) {
-
-                    }
-
-                    @Override
-                    public void onMileageUnitTypeDashboard(int i) {
-
-                    }
-
-                    @Override
-                    public void onSOC(float v) {
-
-                    }
-
-                    @Override
-                    public void onFuelPercent(float v) {
-
-                    }
-
-                    @Override
-                    public void onSpeedDashboard(float v) {
-
-                    }
-
-                    @Override
-                    public void onSpeedUnitTypeDashboard(int i) {
-
-                    }
-
-                    @Override
-                    public void onSpeed(float v) {
-
-                    }
-
-                    @Override
-                    public void onGear(int i) {
-
-                    }
-
-                    @Override
-                    public void onUnit(boolean b) {
-
-                    }
-
-                    @Override
-                    public void onChargeState(int i) {
-
-                    }
-
-                    @Override
-                    public void onAirConditionerOnOffState(boolean b) {
-
-                    }
-
-                    @Override
-                    public void onAirConditionerTempFrontLeft(float v) {
-
-                    }
-
-                    @Override
-                    public void onAirConditionerTempFrontRight(float v) {
-
-                    }
-
-                    @Override
-                    public void onAirConditionerTempRear(float v) {
-
-                    }
-
-                    @Override
-                    public void onOutsideTemp(float v) {
-
-                    }
-
-                    @Override
-                    public void onSteeringWheelAngle(float v) {
-
-                    }
-
-                    @Override
-                    public void onScreenState(boolean b) {
-                        LogUtils.getInstance().i(TAG, "I received a screen event b = " + b);
-                        if (!b) {
-                            LogUtils.getInstance().i(TAG, "Data saving has been completed here...");
-                        }
-                    }
-
-                    @Override
-                    public void onTurnLeftSwitchStatus(int i) {
-
-                    }
-
-                    @Override
-                    public void onTurnRightSwitchStatus(int i) {
-
-                    }
-
-                    @Override
-                    public void onShowCarModeStatus(int i) {
-
-                    }
-                });
-            }
         } catch (Exception e) {
             LogUtils.getInstance().i(TAG, "init sdk error!!! e = " + Utils.getStackTraceAsString(e));
         }
@@ -243,28 +97,11 @@ public class MyApplication extends Application {
         mActivationService = PetalSDKManager.getInstance().getPetalActivationService();
         if (mActivationService != null) {
             activationInitParam.setActivationMode(ActivationMode.ONLINE_ACTIVATION);
-            if (mVehicleService != null) {
-                try {
-                    String mMapActiveCode = mVehicleService.getMapActiveCode();
-                    String mVehicleModel = mVehicleService.getVehicleModel();
-                    String mManufacturer = mVehicleService.getManufacturer();
-
-                    activationInitParam.setDeviceId(mMapActiveCode);
-                    activationInitParam.setCountryCode(mCountryCode);
-                    activationInitParam.setVehicleType(mVehicleModel);
-                    activationInitParam.setManufacturer(mManufacturer);
-                    LogUtils.getInstance().i(TAG, "mVehicleService is not null.. getMapActiveCode = " + mMapActiveCode +
-                            " getVehicleModel = " + mVehicleModel + " getManufacturer = " + mManufacturer + ", mCountryCode = " + mCountryCode);
-                } catch (Exception e) {
-                    LogUtils.getInstance().e(TAG, "mVehicleService error e = " + Utils.getStackTraceAsString(e));
-                }
-            } else {
-                activationInitParam.setDeviceId("apptest123456789");
-                activationInitParam.setCountryCode("CN");
-                activationInitParam.setVehicleType("HUAWEI");
-                activationInitParam.setManufacturer("HUAWEI");
-                LogUtils.getInstance().i(TAG, "mVehicleService is null..");
-            }
+            activationInitParam.setDeviceId("apptest123456789");
+            activationInitParam.setCountryCode("CN");
+            activationInitParam.setVehicleType("HUAWEI");
+            activationInitParam.setManufacturer("HUAWEI");
+            LogUtils.getInstance().i(TAG, "mVehicleService is null..");
             try {
                 String activePath = getExternalFilesDir(null).getCanonicalPath();
                 LogUtils.getInstance().i(TAG, "activePath = " + activePath);
@@ -358,36 +195,6 @@ public class MyApplication extends Application {
         PetalSDKManager.getInstance().getPetalEHPService().startPureEHP();
     }
 
-    public void initLeapMotorService() {
-        ServiceManager.getInstance().init();
-        if (mNaviService != null) {
-            mNaviService.init(getApplicationContext(), new ServiceCallback() {
-                @Override
-                public void onInitSucceed() {
-                    LogUtils.getInstance().i(TAG, "NaviService初始化成功");
-                }
-
-                @Override
-                public void onInitFailed(int i) {
-                    LogUtils.getInstance().i(TAG, "NaviService初始化失败");
-                }
-            });
-        }
-        if (mVehicleService != null) {
-            mVehicleService.init(getApplicationContext(), new ServiceCallback() {
-                @Override
-                public void onInitSucceed() {
-                    LogUtils.getInstance().i(TAG, "VehicleService初始化成功");
-                }
-
-                @Override
-                public void onInitFailed(int i) {
-                    LogUtils.getInstance().i(TAG, "VehicleService初始化失败");
-                }
-            });
-        }
-    }
-
     /**
      * 查询激活状态
      *
@@ -474,95 +281,11 @@ public class MyApplication extends Application {
      * @return {@link VehicleService.SaleArea}
      */
     public int getSaleArea() {
-        if (mVehicleService == null) {
-            return 0;
-        }
-        int area = 0;
-        //Log.i("kikaisatest", "getSaleArea isVehicleServiceInit: " + isVehicleServiceInit);
-
-        try {
-            area = mVehicleService.getSaleArea();
-            LogUtils.getInstance().i(TAG, "getSaleArea - " + area);
-        } catch (Error | Exception e) {
-            LogUtils.getInstance().e(TAG, "getSaleArea err: " + e.getMessage());
-        }
-        return area;
+        return 0;
     }
 
     public String getCountryCode() {
         String countryCode = "CN";
-
-        try {
-            File targetFile = getExternalFilesDir("CountryCode");
-            LogUtils.getInstance().i(TAG, "getCountryCode filePath: " + targetFile.getPath());
-            File file = new File(targetFile, "county.text");
-            boolean isExist = file.exists();
-
-            LogUtils.getInstance().i(TAG, "getCountryCode isExit: " + isExist + " finalPath: " + file.getPath());
-
-            if (isExist) {
-                String[] arr = new String[]{"CN", "AU", "DE", "IL", "SA", "NZ", "PH", "TR", "GB", "CL", "DZ", "MA"};
-                List<String> list = Arrays.asList(arr);
-                String content = Utils.readTextFile(file.getPath());
-
-                if (!TextUtils.isEmpty(content) && list.contains(content)) {
-                    countryCode = content;
-                }
-                LogUtils.getInstance().i(TAG, "getCountryCode readContent " + content + " countryCode: " + countryCode);
-                return countryCode;
-            }
-        } catch (Exception e) {
-            LogUtils.getInstance().i(TAG, "getCountryCode err: " + e.getMessage());
-        }
-        int area = getSaleArea();
-        switch (area) {
-            case VehicleService.SaleArea.CHINA:
-            case VehicleService.SaleArea.HONG_KONG:
-                countryCode = "CN";
-                break;
-            case VehicleService.SaleArea.AUSTRALIA:
-                countryCode = "AU";
-                break;
-            case VehicleService.SaleArea.EU:
-                // 欧盟
-                countryCode = "DE";
-                break;
-            case VehicleService.SaleArea.ISRAEL:
-                countryCode = "IL";
-                break;
-            case VehicleService.SaleArea.MIDDLE_EAST:
-                // 中东
-                countryCode = "SA";
-                break;
-            case VehicleService.SaleArea.NEW_ZEALAND:
-                countryCode = "NZ";
-                break;
-            case VehicleService.SaleArea.SOUTHEAST_ASIA:
-                // 东南亚
-                countryCode = "PH";
-                break;
-            case VehicleService.SaleArea.TURKEY:
-                countryCode = "TR";
-                break;
-            case VehicleService.SaleArea.UK:
-                countryCode = "GB";
-                break;
-            case VehicleService.SaleArea.SOUTH_AMERICA:
-                countryCode = "CL";
-                break;
-            case VehicleService.SaleArea.AFRICA:
-                countryCode = "DZ";
-                break;
-            case VehicleService.SaleArea.MOROCCO:
-                countryCode = "MA";
-                break;
-            default:
-                LogUtils.getInstance().i(TAG, " getCountryCode default area: " + area);
-                countryCode = "DE";
-                break;
-        }
-
-        LogUtils.getInstance().i(TAG, "getCountryCode area: " + area + " countryCode: " + countryCode);
         return countryCode;
     }
 

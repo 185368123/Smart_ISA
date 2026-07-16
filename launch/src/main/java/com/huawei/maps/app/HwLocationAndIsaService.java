@@ -32,9 +32,6 @@ import com.huawei.maps.auto.petalsdk.PetalSDKManager;
 import com.huawei.maps.auto.sdk.businessbase.offline.bean.OfflineConstants;
 import com.huawei.maps.auto.sdk.businessbase.offline.bean.OfflineMapsInfo;
 import com.huawei.maps.location.utils.LocationUtils;
-import com.leapmotor.autosdk.ServiceManager;
-import com.leapmotor.autosdk.module.ServiceName;
-import com.leapmotor.autosdk.module.vehicle.VehicleService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -122,21 +119,6 @@ public class HwLocationAndIsaService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        // ISA不支持的场景，Service自尽且告知系统不要重启
-        VehicleService vehicleService = (VehicleService) ServiceManager.getInstance().getService(ServiceName.VEHICLE_CONFIG);
-        if (vehicleService != null) {
-            try {
-                if (!vehicleService.isIsaSupport()) {
-                    LogUtils.getInstance().i(TAG, "当前车不支持ISA功能, HwLocationAndIsaService自销毁且不重启");
-                    stopForeground(true);
-                    stopSelf();
-                    return START_NOT_STICKY;
-                }
-            } catch (Exception e) {
-                LogUtils.getInstance().e(TAG, "check isIsaSupport error e = " + Utils.getStackTraceAsString(e));
-            }
-        }
-
         // 启动前台服务
         startForeground(NOTIFICATION_ID, createNotification());
 
@@ -241,10 +223,8 @@ public class HwLocationAndIsaService extends Service {
         // 处理新的定位信息
         PetalSDKManager.getInstance().getPetalEHPService().setEHPLocation(location);
         LogUtils.getInstance().i("LocationService", "New location: " + GsonUtil.toJson(location));
-        HwIsaEhpDataTransferImp.getInstance().setLocation(location);
         if (needCheckOfflinedataUpdate && OfflineDataUtils.getInstance().notTimeException()) {
             needCheckOfflinedataUpdate = false;
-            HwIsaEhpDataTransferImp.getInstance().checkGpsOutMapData(location);
 
             new Thread(() -> {
                 try {
